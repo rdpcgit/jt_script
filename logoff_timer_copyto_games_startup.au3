@@ -5,12 +5,8 @@
 ; INSTRUCTIONS:
 ;==============
 ; 1. Put this in STARTUP FOlder so it starts after logging in.
-; 2. Update $default_wait if wait before shutdown is different from default.
-; 3. To shutdown right away after loggin in,
-;    .. set $lunch_start, $night_start, and $hour_stop times at start of shutdown.
-; 4. NOTE: 1. Use this to STOP Minecraft when it is being played.
-;  ***  2. ALSO Use PARENTAL CONTROLS on Windows7 Control Palen / User Accounts
-;			to DISABLE LOGGING IN at RESTRICTED TIMES (Hours)...
+; 2. ALSO Use PARENTAL CONTROLS on Windows7 Control Panel / User Accounts
+;	      to DISABLE LOGGING IN at RESTRICTED TIMES (Hours)...
 ;=================================================================================================================
 
 #include <GUIConstants.au3>
