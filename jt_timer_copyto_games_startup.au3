@@ -178,7 +178,12 @@ While 1
 	Else
 		; OK here. NOT logging off.
 		; .. KEEP LOOPING till TIME Restriction is found
+		; .. until 11pm (23pm) or after, then Exit the script.
 		$stopping = 0;
+		if ($hour >= 23) Then
+			Msgbox(0, " ", "... Exiting Script After 11pm ... ", 3);
+			exit;
+		 endif
 
 	Endif
 
