@@ -183,7 +183,8 @@ While 1
 		; .. ADJUST loop wait @ 11pm+ (23pm) late evening or early morning,
 		;     for games:  loop less frequently to minimize load.
 		;     for others: exit this script.
-		 if ($hour >= 23 and $hour <= 7) Then
+                $late_hour = 23;  ; 23 == 11pm
+		 if ($hour >= $late_hour and $hour <= 7) Then
 			if ($username == "games") then
 			    $wait_loop_milliseconds = 1800 * 1000; ; # 30minutes == 1800sec to Wait between 11pm - 7am.
 			elseif NOT ($username == "games") then
