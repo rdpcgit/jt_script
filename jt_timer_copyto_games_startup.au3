@@ -48,11 +48,11 @@ Opt("TrayIconHide", 1)
 ; SAMPLE INPUT FILE - autoit_times.txt
 #comments-start
 ; 1. line3: login_start
-; 2. line4: login_end
+; 2. line4: login_stop
 09
 21
 ; 5. line7: lunch_start
-; 6. line8: lunch-stop
+; 6. line8: lunch_stop
 11
 13
 ; 9.  line 10: hour_break
@@ -71,7 +71,7 @@ Opt("TrayIconHide", 1)
 	  if ($i == 3) Then
 		 $login_start = $line;
 	  elseif ($i == 4) Then
-		 $login_end = $line;
+		 $login_stop = $line;
 	  elseif ($i == 7) Then
 		 $lunch_start = $line;
 	  elseif ($i == 8) Then
@@ -100,7 +100,7 @@ if ($login_start < 12) Then
 
 ; Display read values:
 if ($testing == 1) then
-   Msgbox(0,'',"Current Hour, login_start,end -- " & $hour & "," & $login_start & "," & $login_end, 3);
+   Msgbox(0,'',"Current Hour, login_start,end -- " & $hour & "," & $login_start & "," & $login_stop, 3);
    Msgbox(0,'',"hour_stop  -- " & $hour_stop, 3);
 endif
 
@@ -118,8 +118,9 @@ $ylabel = $y + 30
 
 ; Initialize variables:
 $begin = TimerInit()
-$wait_loop_seconds = 60;                   ; # seconds to Wait between Loops ("Delay")
+$wait_loop_seconds = 60;                   ; # 60 seconds to Wait between Loops ("Delay")
 $wait_loop_milliseconds = $wait_loop_seconds * 1000; ; # milliseconds to Wait between Loops
+$wait_loop_default = $wait_loop_milliseconds;
 $stop_milliseconds = 30000;                ; # milliseconds before Stopping/Exiting.
 $stop_seconds = $stop_milliseconds / 1000; ; # seconds
 
@@ -138,8 +139,9 @@ While 1
 
 	; Test display of Message - display Time (disappears after 3 seconds)
 	if ($testing == 1) then
-	    $wait_loop_milliseconds = 7000;
-		Msgbox(0, " ", "TESTING - Dif_wait and Time == " & $dif_wait & "," & $hour & ", " & $minute & "," & $second, 3);
+	    ;;$wait_loop_milliseconds = 7000;
+		Msgbox(0, " ", "TESTING - Dif_wait and Time | Wait_ms == " & $dif_wait _
+			   & "," & $hour & ", " & $minute & "," & $second & " | " & $wait_loop_milliseconds, 3);
 	endif
 
 	; TIME RESTRICTIONS:
@@ -147,16 +149,16 @@ While 1
 	; and LUNCH and DINNER start/stop
 	; - do only for GAMES login username account
 	;; if ( ($username == "games") _
-	If ( ($hour < $login_start or $hour >= $login_end or $hour == $hour_break1) _
+	If ( ($hour < $login_start or $hour >= $login_stop or $hour == $hour_break1) _
    		   or ($hour >= $lunch_start and $hour < $lunch_stop) _
-           or ($hour >= $dinner_start and $hour < $dinner_end) _
+           or ($hour >= $dinner_start and $hour < $dinner_stop) _
            or ($hour >= $hour_stop)  ) Then
 
 		 If ($hour >= $lunch_start and $hour < $lunch_stop)  Then
 			Msgbox(0, " ", "... LUNCH TIME ...", 3);
-		 elseif ($hour >= $dinner_start and $hour < $dinner_end) Then
+		 elseif ($hour >= $dinner_start and $hour < $dinner_stop) Then
 			Msgbox(0, " ", "... DINNER TIME ...", 3);
-		 elseif ($hour >= $login_end) Then
+		 elseif ($hour >= $login_stop) Then
 			   Msgbox(0, " ", "... It's almost Bed Time ...", 3);
 		 Endif
 
@@ -164,7 +166,7 @@ While 1
 		 $stopping = 1
 
 		; Stop right away if Before login:
-		if ($dif_wait < $wait_loop_milliseconds)  Then
+		 if ($dif_wait < $wait_loop_milliseconds)  Then
 			if ($testing == 0) then
 			   Msgbox(0, " ", "...LOGIN NOT ALLOWED at this time ... LOGGING OFF..", 3);
 			   sleep(3000);  	; milliseconds delay
@@ -173,16 +175,23 @@ While 1
 			   endif
 			   exit;
 			endif
-		endif
+		 endif
 
 	Else
 		; OK here. NOT logging off.
 		; .. KEEP LOOPING till TIME Restriction is found
-		; .. until 11pm (23pm) or after, then Exit the script.
-		$stopping = 0;
-		if ($hour >= 23) Then
-			Msgbox(0, " ", "... Exiting Script After 11pm ... ", 3);
-			exit;
+		; .. ADJUST loop wait @ 11pm+ (23pm) late evening or early morning,
+		;     for games:  loop less frequently to minimize load.
+		;     for others: exit this script.
+		 if ($hour >= 23 and $hour <= 7) Then
+			if ($username == "games") then
+			    $wait_loop_milliseconds = 1800 * 1000; ; # 30minutes == 1800sec to Wait between 11pm - 7am.
+			elseif NOT ($username == "games") then
+			   Msgbox(0, " ", "...EXITING script...", 3);
+			   exit;
+			endif
+		 else
+			$wait_loop_milliseconds = $wait_loop_default;  ; # normal/default loop wait on daytime.
 		 endif
 
 	Endif
@@ -203,7 +212,7 @@ While 1
 		GuiCtrlCreateLabel("NOTE: LOGGING OFF SOON ... SAVE YOUR WORK NOW ... ", $x, $y+50,300, 40)
 		GuiCtrlSetBkColor(-1, 0x00FF00)	 ; set label background color to green (0x00FF00) when done.
 		sleep(5000);
-	    WinMinimizeAllUndo()   ; Maximize windows to original state
+	        WinMinimizeAllUndo()   ; Maximize windows to original state
 
 		$x = $x_input - 70
 		$y = $ylabel + 60;
