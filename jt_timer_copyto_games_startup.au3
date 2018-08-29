@@ -20,7 +20,7 @@
 ; ------------------------
 
 ; Initialize variables:
-$testing = 0;
+$testing = 1;
 $label_text = ""
 $program_to_stop = "";
 $stopping = 0;
