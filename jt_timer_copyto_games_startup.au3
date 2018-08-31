@@ -20,7 +20,7 @@
 ; ------------------------
 
 ; Initialize variables:
-$testing = 0;
+$testing = 1;
 $label_text = ""
 $program_to_stop = "";
 $stopping = 0;
@@ -63,9 +63,11 @@ Opt("TrayIconHide", 1)
 20
 ; 15. line 16: hour_stop
 21
-; 17. line 18: Friday & Weekends only for time restrictions
+; 17. line 18: (1)-Weekdays time restrictions
 1
-; 19. line 20: enable(1)/disable(0) time restrictions
+; 19. line 20: (1)-Friday/Weekend time restrictions
+1
+; 21. line 22: enable(1)/disable(0) time restrictions
 1
 #comments-end
 
@@ -89,18 +91,26 @@ Opt("TrayIconHide", 1)
 	  elseif ($i == 16) Then
 		 $hour_stop = $line;
 	  elseif ($i == 18) Then
+		 $weekday_flag = $line;    ; weekday flag
+	  elseif ($i == 20) Then
+		 $weekend_flag = $line;    ; Fridays & Weekend flag
+	  elseif ($i == 22) Then
 		 $enable_flag = $line;
 	  endif
    Next
    FileClose($file)
 
+; SCRIPT Restriction (Enable/Disable)
+; ====================================
+; If ENABLE flag is not set,
+; .. exit the script now. (Don't logoff games user).
 if ($enable_flag == 0) Then
     Msgbox(0,'',"Timer DISABLED... exiting.", 3);
     exit;
 endif
 
-; Get initial Time parameters:
-$daynum = @WDAY     ; day# of week: 6 = Fri, 7=Sat, 8 = Sun, 0-5: M-F
+; Get initial Day & Time parameters:
+$daynum = @WDAY     ; day# of week: Su=1,M=2,T=3,W=3,Th=4,F=6,Sa=7
 $hour = @HOUR
 $minute = @MIN
 $second = @SEC
@@ -110,17 +120,30 @@ if ($login_start < 12) Then
     $login_start = "0" & $login_start;
  endif
 
-Msgbox(0,'',"Day  -- " & $daynum, 3);
-; Friday(day#6) - Sunday (day#8)
-if ($daynum >=6 and $daynum <=8) Then
-   Msgbox(0,'',"Friday & Weekends == DISABLE TImer", 3);
-endif
-
 ; Display read values:
 if ($testing == 1) then
-   Msgbox(0,'',"Current Hour, login_start,end -- " & $hour & "," & $login_start & "," & $login_stop, 3);
-   Msgbox(0,'',"hour_stop  -- " & $hour_stop, 3);
+   Msgbox(0,'',"Weekday, Weekend Flags -- " & $weekday_flag &","& $weekend_flag, 3);
+   Msgbox(0,'',"Day, Current Hour | login_start,end -- " & $daynum &","& $hour &" | "& $login_start &","& $login_stop, 5);
 endif
+
+; DAY Restrictions
+; ================
+; - check if today is a Restricted ay
+;   eg: if (weekday is DISABLED (through week_flag from file))
+;           and (today is a weekday (M-THU) )
+;           then EXIT
+;       else
+;         Continue checking HOUR TIME Restrictions below.\
+; Weekday # is 0-3 (M-THU)
+
+; testing values
+;;$daynum = 7
+
+; Check WEEK DAY Restriction:
+check_weekday_restriction ($weekday_flag, $daynum, $testing)
+
+; Check WEEK END Restriction
+check_weekend_restriction ($weekend_flag, $daynum, $testing)
 
 ; GUI X, Y location
 $x = 50;
@@ -156,13 +179,16 @@ While 1
 	$second = @SEC
 
 	; Test display of Message - display Time (disappears after 3 seconds)
+	#comments-start
 	if ($testing == 1) then
 	    ;;$wait_loop_milliseconds = 7000;
 		Msgbox(0, " ", "TESTING - Dif_wait and Time | Wait_ms == " & $dif_wait _
-			   & "," & $hour & ", " & $minute & "," & $second & " | " & $wait_loop_milliseconds, 3);
+			   & "," & $hour & ", " & $minute & "," & $second & " | " & $wait_loop_milliseconds, 5);
 	endif
+	#comments-end
 
 	; TIME RESTRICTIONS:
+   ; ==================
 	; for LOGIN start and Login end time
 	; and LUNCH and DINNER start/stop
 	; - do only for GAMES login username account
@@ -224,7 +250,7 @@ While 1
 
 		SoundPlay(@WindowsDir & "\media\tada.wav", 1);  ; play sound before displaying Log off.
 		Msgbox(0, " ", "...LOGGING OFF SOON...in 1 MINUTE", 3);
-		sleep(60000);  ; 60,000 ms, 1 minute
+		sleep(60000);  ; 60,000 ms, 1 minute before Logging off.
 
 		WinMinimizeAll();  ; Minimize windows to alert user.
 
@@ -259,6 +285,40 @@ While 1
 
 Wend  ; End of while loop
 
+
+; --- FUNCTIONS ----------------------------------------------------------
+
+; Check WEEK DAY Restriction:
+
+Func check_weekday_restriction ($weekday_flag, $daynum, $testing)
+   ; Check WEEKDAY Restriction:
+   ;  .. day #: M=2,T=3,W=3,Th=4
+   if ( ($weekday_flag == 0) and ($daynum >=2 and $daynum <= 4)) Then
+	  ; No weekday restriction
+	  ; .. Exit now. Don't logoff games user.
+	  if ($testing == 1) then
+		 Msgbox(0,'',"WEEK DAY restriction DISABLED.. Exiting script now.", 3);
+	  endif
+	  exit;
+   endif
+EndFunc
+
+; Check WEEK END Restriction:
+
+Func check_weekend_restriction ($weekend_flag, $daynum, $testing)
+   ; WeekEnd day #
+   ; .. Sunday=1,Fri=6,Sat=7
+   if ( ($weekend_flag == 0) and ($daynum == 1 or $daynum == 6 or $daynum == 7)) Then
+	  ; No weekday restriction
+	  ; .. Exit now. Don't logoff games user.
+	  if ($testing == 1) then
+		 Msgbox(0,'',"WEEK END restriction DISABLED.. Exiting script now.", 3);
+	  endif
+	  exit;
+   endif
+EndFunc
+
+; ----------------
 ; We're done here.
 
 ; ----------------------------------------------------------
