@@ -47,27 +47,29 @@ Opt("TrayIconHide", 1)
 
 ; SAMPLE INPUT FILE - autoit_times.txt
 #comments-start
-; 1. line3: login_start
-; 2. line4: login_stop
-09
-21
-; 5. line7: lunch_start
-; 6. line8: lunch_stop
+; 1. line2: number of lines in this file
+24
+; 3. line5: login_start
+; 4. line6: login_end
+13
+19
+; 7. line9:  lunch_start
+; 8. line10: lunch-stop
 11
 13
-; 9.  line 10: hour_break
+; 11.  line 12: hour_break
 15
-; 11. line 13: dinner_start
-; 12. line 14: dinner_stop
+; 13. line 15: dinner_start
+; 14. line 16: dinner_stop
 18
 20
-; 15. line 16: hour_stop
+; 17. line 18: hour_stop
 21
-; 17. line 18: (1)-Weekdays time restrictions
+; 19. line 20: Weekdays(1) enable / disable(0) Restriction
+0
+; 21. line 22: Friday/Weekends(1) enable / disable(0)
 1
-; 19. line 20: (1)-Friday/Weekend time restrictions
-1
-; 21. line 22: enable(1)/disable(0) time restrictions
+; 23. line 24: Enable Script (1)/disable(0) Time Restrictions
 1
 #comments-end
 
