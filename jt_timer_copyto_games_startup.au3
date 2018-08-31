@@ -104,10 +104,7 @@ Opt("TrayIconHide", 1)
 ; ====================================
 ; If ENABLE flag is not set,
 ; .. exit the script now. (Don't logoff games user).
-if ($enable_flag == 0) Then
-    Msgbox(0,'',"Timer DISABLED... exiting.", 3);
-    exit;
-endif
+check_enable_flag ($enable_flag);
 
 ; Get initial Day & Time parameters:
 $daynum = @WDAY     ; day# of week: Su=1,M=2,T=3,W=3,Th=4,F=6,Sa=7
@@ -287,6 +284,16 @@ Wend  ; End of while loop
 
 
 ; --- FUNCTIONS ----------------------------------------------------------
+
+; Check Enable Flag 
+
+Func check_enable_flag ($enable_flag)
+   if ($enable_flag == 0) Then
+       Msgbox(0,'',"Timer DISABLED... exiting.", 3);
+       exit;
+   endif
+EndFunc
+
 
 ; Check WEEK DAY Restriction:
 
