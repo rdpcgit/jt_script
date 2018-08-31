@@ -71,31 +71,40 @@ Opt("TrayIconHide", 1)
 1
 #comments-end
 
-   ; Read file Line by line:
-   For $i = 1 to _FileCountLines($file)
+   ; Read File Line by line:
+   $total_lines = _FileCountLines($file)
+   For $i = 1 to $total_lines
 	  $line = FileReadLine($file, $i);   ; tag: "Readfile"
-	  if ($i == 3) Then
+	  if ($i == 2) Then
+		 $numLines = $line
+		 ;;Msgbox(0,'',"numLines, Total lines -- "  & $numLines &","& $total_lines, 3);
+		 if NOT ($numLines == $total_lines) Then
+			Msgbox(0,'',"ERROR: numlines in file - " & $total_lines & " - is invalid.", 3);
+			exit;
+		 endif
+	  elseif ($i == 5) Then
 		 $login_start = $line;
-	  elseif ($i == 4) Then
+	  elseif ($i == 6) Then
 		 $login_stop = $line;
-	  elseif ($i == 7) Then
+	  elseif ($i == 9) Then
 		 $lunch_start = $line;
-	  elseif ($i == 8) Then
-		 $lunch_stop = $line;
 	  elseif ($i == 10) Then
+		 $lunch_stop = $line;
+	  elseif ($i == 12) Then
 		 $hour_break1 = $line;
-   	  elseif ($i == 13) Then
+   	  elseif ($i == 15) Then
 		 $dinner_start = $line;
-   	  elseif ($i == 14) Then
+   	  elseif ($i == 16) Then
 		 $dinner_stop = $line;
-	  elseif ($i == 16) Then
-		 $hour_stop = $line;
 	  elseif ($i == 18) Then
-		 $weekday_flag = $line;    ; weekday flag
+		 $hour_stop = $line;
 	  elseif ($i == 20) Then
-		 $weekend_flag = $line;    ; Fridays & Weekend flag
+		 $weekday_flag = $line;    ; weekday flag
 	  elseif ($i == 22) Then
+		 $weekend_flag = $line;    ; Fridays & Weekend flag
+	  elseif ($i == 24) Then
 		 $enable_flag = $line;
+		 checkNumeric($enable_flag);
 	  endif
    Next
    FileClose($file)
@@ -285,7 +294,14 @@ Wend  ; End of while loop
 
 ; --- FUNCTIONS ----------------------------------------------------------
 
-; Check Enable Flag 
+; Check Enable Flag
+
+Func checkNumeric ($flag)
+      if NOT (StringIsDigit($flag)) Then
+		 Msgbox(0,'',"ERROR: Flag " & $flag & " is NOT numeric.", 5);
+		 exit;
+	  endif
+EndFunc
 
 Func check_enable_flag ($enable_flag)
    if ($enable_flag == 0) Then
@@ -293,7 +309,6 @@ Func check_enable_flag ($enable_flag)
        exit;
    endif
 EndFunc
-
 
 ; Check WEEK DAY Restriction:
 
