@@ -1,5 +1,5 @@
 ; Script:  LOGOFF  for JT.
-; testing dev1 ...
+;
 ; Revision History
 ; ------------------
 ; INSTRUCTIONS:
@@ -20,7 +20,7 @@
 ; ------------------------
 
 ; Initialize variables:
-$testing = 1;
+$testing = 0;
 $label_text = ""
 $program_to_stop = "";
 $stopping = 0;
@@ -63,6 +63,10 @@ Opt("TrayIconHide", 1)
 20
 ; 15. line 16: hour_stop
 21
+; 17. line 18: Friday & Weekends only for time restrictions
+1
+; 19. line 20: enable(1)/disable(0) time restrictions
+1
 #comments-end
 
    ; Read file Line by line:
@@ -84,11 +88,19 @@ Opt("TrayIconHide", 1)
 		 $dinner_stop = $line;
 	  elseif ($i == 16) Then
 		 $hour_stop = $line;
+	  elseif ($i == 18) Then
+		 $enable_flag = $line;
 	  endif
    Next
    FileClose($file)
 
+if ($enable_flag == 0) Then
+    Msgbox(0,'',"Timer DISABLED... exiting.", 3);
+    exit;
+endif
+
 ; Get initial Time parameters:
+$daynum = @WDAY     ; day# of week: 6 = Fri, 7=Sat, 8 = Sun, 0-5: M-F
 $hour = @HOUR
 $minute = @MIN
 $second = @SEC
@@ -97,6 +109,12 @@ $login_start = $login_start + 0;
 if ($login_start < 12) Then
     $login_start = "0" & $login_start;
  endif
+
+Msgbox(0,'',"Day  -- " & $daynum, 3);
+; Friday(day#6) - Sunday (day#8)
+if ($daynum >=6 and $daynum <=8) Then
+   Msgbox(0,'',"Friday & Weekends == DISABLE TImer", 3);
+endif
 
 ; Display read values:
 if ($testing == 1) then
@@ -170,8 +188,10 @@ While 1
 			if ($testing == 0) then
 			   Msgbox(0, " ", "...LOGIN NOT ALLOWED at this time ... LOGGING OFF..", 3);
 			   sleep(3000);  	; milliseconds delay
-			   if  NOT ($username == "rdavid") then
+			   if  NOT ($username == "rdavid" or $username == "digo") then
 				  shutdown(16);   ; 16 == Logoff
+			   else
+				  Msgbox(0, " ", "...Disabled for user " & $username, 3);
 			   endif
 			   exit;
 			endif
@@ -183,8 +203,7 @@ While 1
 		; .. ADJUST loop wait @ 11pm+ (23pm) late evening or early morning,
 		;     for games:  loop less frequently to minimize load.
 		;     for others: exit this script.
-                $late_hour = 23;  ; 23 == 11pm
-		 if ($hour >= $late_hour and $hour <= 7) Then
+		 if ($hour >= 23 and $hour <= 7) Then
 			if ($username == "games") then
 			    $wait_loop_milliseconds = 1800 * 1000; ; # 30minutes == 1800sec to Wait between 11pm - 7am.
 			elseif NOT ($username == "games") then
