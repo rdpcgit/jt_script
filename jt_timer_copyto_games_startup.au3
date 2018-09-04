@@ -20,7 +20,7 @@
 ; ------------------------
 
 ; Initialize variables:
-$testing = 1;
+$testing = 0;
 $label_text = ""
 $program_to_stop = "";
 $stopping = 0;
@@ -50,7 +50,7 @@ Opt("TrayIconHide", 1)
 ; 1. line2: number of lines in this file
 24
 ; 3. line5: login_start
-; 4. line6: login_end
+; 4. line6: login_stop
 13
 19
 ; 7. line9:  lunch_start
@@ -63,13 +63,11 @@ Opt("TrayIconHide", 1)
 ; 14. line 16: dinner_stop
 18
 20
-; 17. line 18: hour_stop
-21
-; 19. line 20: Weekdays(1) enable / disable(0) Restriction
+; 17. line 18: Weekdays(1) enable / disable(0) Restriction
 0
-; 21. line 22: Friday/Weekends(1) enable / disable(0)
+; 19. line 20: Friday/Weekends(1) enable / disable(0)
 1
-; 23. line 24: Enable Script (1)/disable(0) Time Restrictions
+; 21. line 22: Enable Script (1)/disable(0) Time Restrictions
 1
 #comments-end
 
@@ -99,12 +97,10 @@ Opt("TrayIconHide", 1)
    	  elseif ($i == 16) Then
 		 $dinner_stop = $line;
 	  elseif ($i == 18) Then
-		 $hour_stop = $line;
-	  elseif ($i == 20) Then
 		 $weekday_flag = $line;    ; weekday flag
-	  elseif ($i == 22) Then
+	  elseif ($i == 20) Then
 		 $weekend_flag = $line;    ; Fridays & Weekend flag
-	  elseif ($i == 24) Then
+	  elseif ($i == 22) Then
 		 $enable_flag = $line;
 		 checkNumeric($enable_flag);
 	  endif
@@ -203,26 +199,59 @@ While 1
 	;; if ( ($username == "games") _
 	If ( ($hour < $login_start or $hour >= $login_stop or $hour == $hour_break1) _
    		   or ($hour >= $lunch_start and $hour < $lunch_stop) _
-           or ($hour >= $dinner_start and $hour < $dinner_stop) _
-           or ($hour >= $hour_stop)  ) Then
+           or ($hour >= $dinner_start and $hour < $dinner_stop) )  Then
 
+		 ; Set Secondary flag for logging off.
+		 $stop_now = 1;
+
+         ;; For LUCHTIME:
 		 If ($hour >= $lunch_start and $hour < $lunch_stop)  Then
-			Msgbox(0, " ", "... LUNCH TIME ...", 3);
+			; Logoff LUNCHTIME starting @ 11:30am -- special case:
+			if ($hour == 11) Then
+			   if ($minute >= 30) Then
+				  Msgbox(0, " ", "... Prepare for LUNCHTIME ...", 3);
+			   else
+				  ; Too early for Lunch
+				  ; .. Not yet 11:30am+, so don't logoff yet.
+				  $stop_now = 0;
+				  $stopping = 0;
+			   endif
+			else
+			   ;  LUNCTIME, Log off now.
+			   Msgbox(0, " ", "... LUNCH TIME ...", 3);
+			endif
+
+         ;; For DINNER TIME:
 		 elseif ($hour >= $dinner_start and $hour < $dinner_stop) Then
-			Msgbox(0, " ", "... DINNER TIME ...", 3);
+			; Logoff Dinner starting @ 6:30pm -- special case:
+			if ($hour == 18) Then
+			   if ($minute >= 30) Then
+				  Msgbox(0, " ", "... 6:30 - 7pm -- Prepare for DINNER ...", 3);
+			   else
+				  ; Too early for dinner.
+				  ; .. Not yet 6:30pm+, so don't logoff yet.
+				  $stop_now = 0;
+				  $stopping = 0;
+			   endif
+			else
+			   ; For Other Dinner time, eg: 7-8pm:
+			   Msgbox(0, " ", "... DINNER Time ...", 3);
+			endif
 		 elseif ($hour >= $login_stop) Then
 			   Msgbox(0, " ", "... It's almost Bed Time ...", 3);
-		 Endif
+		 endif
 
 		; Set LOG OFF flag
-		 $stopping = 1
+		if ($stop_now == 1) then
+			$stopping = 1
+	    endif;
 
 		; Stop right away if Before login:
-		 if ($dif_wait < $wait_loop_milliseconds)  Then
+		 if ( ($dif_wait < $wait_loop_milliseconds) and ($stopping == 1) ) Then
 			if ($testing == 0) then
 			   Msgbox(0, " ", "...LOGIN NOT ALLOWED at this time ... LOGGING OFF..", 3);
-			   sleep(3000);  	; milliseconds delay
-			   if  NOT ($username == "rdavid" or $username == "digo") then
+			   sleep(5000);  	; milliseconds delay
+			   if  ($username == "games") then
 				  shutdown(16);   ; 16 == Logoff
 			   else
 				  Msgbox(0, " ", "...Disabled for user " & $username, 3);
@@ -234,6 +263,7 @@ While 1
 	Else
 		; OK here. NOT logging off.
 		; .. KEEP LOOPING till TIME Restriction is found
+		; For LATE AT NIGHT:
 		; .. ADJUST loop wait @ 11pm+ (23pm) late evening or early morning,
 		;     for games:  loop less frequently to minimize load.
 		;     for others: exit this script.
