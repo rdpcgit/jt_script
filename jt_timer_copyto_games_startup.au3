@@ -20,7 +20,7 @@
 ; ------------------------
 
 ; Initialize variables:
-$testing = 0;
+$testing = 1;
 $label_text = ""
 $program_to_stop = "";
 $stopping = 0;
@@ -46,66 +46,60 @@ Opt("TrayIconHide", 1)
    $count = 1 + _FileCountLines($file)
 
 ; SAMPLE INPUT FILE - autoit_times.txt
-#comments-start
-; 1. line2: number of lines in this file
-24
-; 3. line5: login_start
-; 4. line6: login_stop
-13
-19
-; 7. line9:  lunch_start
-; 8. line10: lunch-stop
-11
-13
-; 11.  line 12: hour_break
-15
-; 13. line 15: dinner_start
-; 14. line 16: dinner_stop
-18
-20
-; 17. line 18: Weekdays(1) enable / disable(0) Restriction
-0
-; 19. line 20: Friday/Weekends(1) enable / disable(0)
-1
-; 21. line 22: Enable Script (1)/disable(0) Time Restrictions
-1
-#comments-end
+#comments-start   (comments start)
+10   ; == login_start
+21   ;     login_stop
+11   ; == lunch_start
+13   ;     lunch-stop
+15   ; == hour_break
+18   ; == dinner_start
+20   ;     dinner_stop
+1    ; Weekdays(1) enable / disable(0) Restriction
+1   ; Friday/Weekends(1) enable / disable(0)
+1   ; Enable Script (1)/disable(0) Time Restrictions
+#comments-end  (comments end)
 
-   ; Read File Line by line:
-   $total_lines = _FileCountLines($file)
-   For $i = 1 to $total_lines
+; Read File Line by line:
+$total_lines = _FileCountLines($file)
+;;Msgbox(0,'',"total lines in file -- " & $total_lines, 3);
+
+For $i = 1 to $total_lines
+
 	  $line = FileReadLine($file, $i);   ; tag: "Readfile"
-	  if ($i == 2) Then
-		 $numLines = $line
-		 ;;Msgbox(0,'',"numLines, Total lines -- "  & $numLines &","& $total_lines, 3);
-		 if NOT ($numLines == $total_lines) Then
-			Msgbox(0,'',"ERROR: numlines in file - " & $total_lines & " - is invalid.", 3);
-			exit;
-		 endif
+      ; Split string to an Array.
+	  ;   Array_var[0] == # of chars read
+	  ;   Array[var[1] == values read before the Delimeter
+	  $time_read_array = Stringsplit($line, ";");
+	  $time_read = StringStripWS($time_read_array[1],8);  ; remove whitespace (All flag: 8)
+	  if ($testing == 1) then
+		 Msgbox(0,'',"line# -- " & $i& " -- | line read, time read -- " & $line & " ==  "& $time_read, 1);
+	  endif
+
+	  if ($i == 1) Then
+		 $login_start = $time_read;
+	  elseif ($i == 2) Then
+		 $login_stop = $time_read;
+	  elseif ($i == 3) Then
+		 $lunch_start = $time_read;
+	  elseif ($i == 4) Then
+		 $lunch_stop = $time_read;
 	  elseif ($i == 5) Then
-		 $login_start = $line;
-	  elseif ($i == 6) Then
-		 $login_stop = $line;
+		 $hour_break1 = $time_read;
+   	  elseif ($i == 6) Then
+		 $dinner_start = $time_read;
+   	  elseif ($i == 7) Then
+		 $dinner_stop = $time_read;
+	  elseif ($i == 8) Then
+		 $weekday_flag = $time_read;    ; weekday flag
 	  elseif ($i == 9) Then
-		 $lunch_start = $line;
+		 $weekend_flag = $time_read;    ; Fridays & Weekend flag
 	  elseif ($i == 10) Then
-		 $lunch_stop = $line;
-	  elseif ($i == 12) Then
-		 $hour_break1 = $line;
-   	  elseif ($i == 15) Then
-		 $dinner_start = $line;
-   	  elseif ($i == 16) Then
-		 $dinner_stop = $line;
-	  elseif ($i == 18) Then
-		 $weekday_flag = $line;    ; weekday flag
-	  elseif ($i == 20) Then
-		 $weekend_flag = $line;    ; Fridays & Weekend flag
-	  elseif ($i == 22) Then
-		 $enable_flag = $line;
+		 $enable_flag = $time_read;
 		 checkNumeric($enable_flag);
 	  endif
-   Next
-   FileClose($file)
+
+Next
+FileClose($file)
 
 ; SCRIPT Restriction (Enable/Disable)
 ; ====================================
@@ -120,14 +114,14 @@ $minute = @MIN
 $second = @SEC
 ; Login start hours < 12 must be 2 digits when comparing:
 $login_start = $login_start + 0;
-if ($login_start < 12) Then
+if ($login_start < 10) Then
     $login_start = "0" & $login_start;
  endif
 
 ; Display read values:
 if ($testing == 1) then
-   Msgbox(0,'',"Weekday, Weekend Flags -- " & $weekday_flag &","& $weekend_flag, 3);
-   Msgbox(0,'',"Day, Current Hour | login_start,end -- " & $daynum &","& $hour &" | "& $login_start &","& $login_stop, 5);
+   Msgbox(0,'',"Weekday, Weekend Flags -- " & $weekday_flag &","& $weekend_flag, 1);
+   Msgbox(0,'',"Day, Current Hour | login_start,end -- " & $daynum &","& $hour &" | "& $login_start &","& $login_stop, 2);
 endif
 
 ; DAY Restrictions
