@@ -2,6 +2,8 @@
 ;
 ; Revision History
 ; ------------------
+;09/04/18 Changed inputfile to have ONE LINE per input.
+;
 ; INSTRUCTIONS:
 ;==============
 ; 1. Put this in STARTUP FOlder so it starts after logging in.
@@ -23,6 +25,7 @@
 $testing = 1;
 $label_text = ""
 $program_to_stop = "";
+$stop_now = 0;
 $stopping = 0;
 $username = @username;  ; login name
 
@@ -36,6 +39,7 @@ $version = "0"
 Opt("TrayIconHide", 1)
 
 ; Read file containing times for login_start..$hour_break..$dinner_stop..etc
+; .. one line per input.
 ; ==========================================================================
    $file = "c:\Windows_misc\autoit_times.txt";
    FileOpen($file,0);
@@ -47,16 +51,16 @@ Opt("TrayIconHide", 1)
 
 ; SAMPLE INPUT FILE - autoit_times.txt
 #comments-start   (comments start)
-10   ; == login_start
-21   ;     login_stop
-11   ; == lunch_start
-13   ;     lunch-stop
-15   ; == hour_break
-18   ; == dinner_start
-20   ;     dinner_stop
-1    ; Weekdays(1) enable / disable(0) Restriction
-1   ; Friday/Weekends(1) enable / disable(0)
-1   ; Enable Script (1)/disable(0) Time Restrictions
+10   ; (1)== login_start
+21   ; (2)    login_stop
+11   ; (3) == lunch_start
+13   ; (4)   lunch-stop
+15   ; (5) == hour_break
+18   ; (6) == dinner_start
+20   ; (7) dinner_stop
+1    ; (8) Weekdays(1) enable / disable(0) Restriction
+1    ; (9) Friday/Weekends(1) enable / disable(0)
+1    ; (10) Enable Script (1)/disable(0) Time Restrictions
 #comments-end  (comments end)
 
 ; Read File Line by line:
@@ -66,7 +70,7 @@ $total_lines = _FileCountLines($file)
 For $i = 1 to $total_lines
 
 	  $line = FileReadLine($file, $i);   ; tag: "Readfile"
-      ; Split string to an Array.
+          ; Split string to an Array.
 	  ;   Array_var[0] == # of chars read
 	  ;   Array[var[1] == values read before the Delimeter
 	  $time_read_array = Stringsplit($line, ";");
@@ -186,59 +190,34 @@ While 1
 	#comments-end
 
 	; TIME RESTRICTIONS:
-   ; ==================
+        ; ==================
 	; for LOGIN start and Login end time
 	; and LUNCH and DINNER start/stop
 	; - do only for GAMES login username account
 	;; if ( ($username == "games") _
 	If ( ($hour < $login_start or $hour >= $login_stop or $hour == $hour_break1) _
    		   or ($hour >= $lunch_start and $hour < $lunch_stop) _
-           or ($hour >= $dinner_start and $hour < $dinner_stop) )  Then
+                   or ($hour >= $dinner_start and $hour < $dinner_stop) )  Then
 
 		 ; Set Secondary flag for logging off.
 		 $stop_now = 1;
 
-         ;; For LUCHTIME:
-		 If ($hour >= $lunch_start and $hour < $lunch_stop)  Then
-			; Logoff LUNCHTIME starting @ 11:30am -- special case:
-			if ($hour == 11) Then
-			   if ($minute >= 30) Then
-				  Msgbox(0, " ", "... Prepare for LUNCHTIME ...", 3);
-			   else
-				  ; Too early for Lunch
-				  ; .. Not yet 11:30am+, so don't logoff yet.
-				  $stop_now = 0;
-				  $stopping = 0;
-			   endif
-			else
-			   ;  LUNCTIME, Log off now.
-			   Msgbox(0, " ", "... LUNCH TIME ...", 3);
-			endif
+                 ;; Check LUCHTIME:
+		 $message_prepare = "... Prepare for LUNCHTIME ...";
+		 $message_main    = "... LUNCH TIME ...";
+		 $stop_now = check_lunch_or_dinner ($hour, $minute, $lunch_start, $lunch_stop, _
+					        $message_prepare, $message_main, $stop_now);
 
-         ;; For DINNER TIME:
-		 elseif ($hour >= $dinner_start and $hour < $dinner_stop) Then
-			; Logoff Dinner starting @ 6:30pm -- special case:
-			if ($hour == 18) Then
-			   if ($minute >= 30) Then
-				  Msgbox(0, " ", "... 6:30 - 7pm -- Prepare for DINNER ...", 3);
-			   else
-				  ; Too early for dinner.
-				  ; .. Not yet 6:30pm+, so don't logoff yet.
-				  $stop_now = 0;
-				  $stopping = 0;
-			   endif
-			else
-			   ; For Other Dinner time, eg: 7-8pm:
-			   Msgbox(0, " ", "... DINNER Time ...", 3);
-			endif
-		 elseif ($hour >= $login_stop) Then
-			   Msgbox(0, " ", "... It's almost Bed Time ...", 3);
-		 endif
+         	 ;; Check DINNER TIME:
+		 $message_prepare = "... Prepare for DINNER ...";
+		 $message_main    = "... DINNER TIME ...";
+		 $stop_now = check_lunch_or_dinner ($hour, $minute, $dinner_start, $dinner_stop, _
+					        $message_prepare, $message_main, $stop_now);
 
 		; Set LOG OFF flag
 		if ($stop_now == 1) then
 			$stopping = 1
-	    endif;
+	        endif;
 
 		; Stop right away if Before login:
 		 if ( ($dif_wait < $wait_loop_milliseconds) and ($stopping == 1) ) Then
@@ -320,6 +299,31 @@ Wend  ; End of while loop
 
 ; --- FUNCTIONS ----------------------------------------------------------
 
+; Check if lunchtime or dinner time
+
+Func check_lunch_or_dinner ($hour, $minute, $start, $stop, $message_b4, $message_main, $stop_now)
+
+   If ($hour >= $start and $hour < $stop)  Then
+      ; Logoff Lunchtime or Dinner starting @ 11:30am / 6:30 pm-- special case:
+      ; .. check for "30 minute" restriction:
+      if ($hour == 11 or $hour == 18) Then
+	   if ($minute >= 30) Then
+	     Msgbox(0, " ", $message_b4, 3);
+	   else
+	     ; Too early for Lunch/Dinner
+	     ; .. Not yet 11:30am+ / 6:30pm+, so don't logoff yet.
+	     $stop_now = 0;
+	   endif
+     else
+	   ;  LUNCHtime/DINNERtime, Log off now.
+	   Msgbox(0, " ", $message_main , 3);
+     endif
+    Endif
+    # Return flag value:
+    return $stop_now;
+EndFunc
+
+
 ; Check Enable Flag
 
 Func checkNumeric ($flag)
@@ -340,8 +344,8 @@ EndFunc
 
 Func check_weekday_restriction ($weekday_flag, $daynum, $testing)
    ; Check WEEKDAY Restriction:
-   ;  .. day #: M=2,T=3,W=3,Th=4
-   if ( ($weekday_flag == 0) and ($daynum >=2 and $daynum <= 4)) Then
+   ;  .. day #: M=2,T=3,W=4,Th=5,Fri=6
+   if ( ($weekday_flag == 0) and ($daynum >=2 and $daynum <= 5)) Then
 	  ; No weekday restriction
 	  ; .. Exit now. Don't logoff games user.
 	  if ($testing == 1) then
